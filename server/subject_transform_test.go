@@ -231,5 +231,5 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldMatch("*", "{{left(1,3)}}", "1234", "123")
 	shouldMatch("*", "{{left(1,6)}}", "1234", "1234")
 	shouldMatch("foo.*", "bar.{{custom(1)}}", "foo.hello","bar.customhello")
-	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar","bar.custom2.")
+	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar","bar.custom2.custom1")
 }
