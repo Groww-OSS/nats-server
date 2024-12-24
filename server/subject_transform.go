@@ -1,4 +1,3 @@
-// Copyright 2023 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,6 +20,17 @@ import (
 	"strings"
 )
 
+
+var customMappingFunction func(token string) string
+
+func RegisterCustomMappingFunction(f func(token string) string) error{
+	if customMappingFunction == nil {
+		customMappingFunction = f
+		return nil
+	}
+	return fmt.Errorf("custom mapping function already registered")
+}
+
 // Subject mapping and transform setups.
 var (
 	commaSeparatorRegEx                = regexp.MustCompile(`,\s*`)
@@ -33,6 +43,7 @@ var (
 	splitMappingFunctionRegEx          = regexp.MustCompile(`{{\s*[sS]plit\s*\((.*)\)\s*}}`)
 	leftMappingFunctionRegEx           = regexp.MustCompile(`{{\s*[lL]eft\s*\((.*)\)\s*}}`)
 	rightMappingFunctionRegEx          = regexp.MustCompile(`{{\s*[rR]ight\s*\((.*)\)\s*}}`)
+	customtMappingFunctionRegEx        = regexp.MustCompile(`{{\s*[cC]ustom\s*\((.*)\)\s*}}`)
 )
 
 // Enum for the subject mapping subjectTransform function types
@@ -48,6 +59,7 @@ const (
 	Split
 	Left
 	Right
+	Custom
 )
 
 // Transforms for arbitrarily mapping subjects from one to another for maps, tees and filters.
@@ -116,9 +128,8 @@ func NewSubjectTransformWithStrict(src, dest string, strict bool) (*subjectTrans
 			if err != nil {
 				return nil, err
 			}
-
 			if strict {
-				if tranformType != NoTransform && tranformType != Wildcard {
+				if tranformType != NoTransform && tranformType != Wildcard  && tranformType != Custom {
 					return nil, &mappingDestinationErr{token, ErrMappingDestinationNotSupportedForImport}
 				}
 			}
@@ -313,6 +324,23 @@ func indexPlaceHolders(token string) (int16, []int, int32, string, error) {
 				return transformIndexIntArgsHelper(token, args, Left)
 			}
 
+			// Custom(token)
+			args = getMappingFunctionArgs(customtMappingFunctionRegEx, token)
+			if args != nil {
+				if len(args) == 1 && args[0] == _EMPTY_ {
+					return BadTransform, []int{}, -1, _EMPTY_, &mappingDestinationErr{token, ErrMappingDestinationNotEnoughArgs}
+				}
+				if len(args) == 1 {
+					tokenIndex, err := strconv.Atoi(strings.Trim(args[0], " "))
+					if err != nil {
+						return BadTransform, []int{}, -1, _EMPTY_, &mappingDestinationErr{token, ErrMappingDestinationInvalidArg}
+					}
+					return Custom, []int{tokenIndex}, -1, _EMPTY_, nil
+				} else {
+					return BadTransform, []int{}, -1, _EMPTY_, &mappingDestinationErr{token, ErrMappingDestinationTooManyArgs}
+				}
+			}
+
 			// split(token, deliminator)
 			args = getMappingFunctionArgs(splitMappingFunctionRegEx, token)
 			if args != nil {
@@ -458,8 +486,13 @@ func (tr *subjectTransform) TransformTokenizedSubject(tokens []string) string {
 					keyForHashing = append(keyForHashing, []byte(tokens[sourceToken])...)
 				}
 				b.WriteString(tr.getHashPartition(keyForHashing, int(tr.dtokmfintargs[i])))
+			case Custom:
+				if(customMappingFunction == nil) {
+					b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
+				}
+				b.WriteString(customMappingFunction(tokens[tr.dtokmftokindexesargs[i][0]]))
 			case Wildcard: // simple substitution
-				b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
+			    b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
 			case SplitFromLeft:
 				sourceToken := tokens[tr.dtokmftokindexesargs[i][0]]
 				sourceTokenLen := len(sourceToken)
