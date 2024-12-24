@@ -494,7 +494,7 @@ func (tr *subjectTransform) TransformTokenizedSubject(tokens []string) string {
 				}
 				b.WriteString(customMappingFunction(tokens[tr.dtokmftokindexesargs[i][0]]))
 			case Wildcard: // simple substitution
-					b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
+				b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
 			case SplitFromLeft:
 				sourceToken := tokens[tr.dtokmftokindexesargs[i][0]]
 				sourceTokenLen := len(sourceToken)
