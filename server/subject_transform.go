@@ -1,3 +1,4 @@
+// Copyright 2023 The NATS Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -128,6 +129,7 @@ func NewSubjectTransformWithStrict(src, dest string, strict bool) (*subjectTrans
 			if err != nil {
 				return nil, err
 			}
+
 			if strict {
 				if tranformType != NoTransform && tranformType != Wildcard  && tranformType != Custom {
 					return nil, &mappingDestinationErr{token, ErrMappingDestinationNotSupportedForImport}
@@ -492,7 +494,7 @@ func (tr *subjectTransform) TransformTokenizedSubject(tokens []string) string {
 				}
 				b.WriteString(customMappingFunction(tokens[tr.dtokmftokindexesargs[i][0]]))
 			case Wildcard: // simple substitution
-			    b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
+			    	b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
 			case SplitFromLeft:
 				sourceToken := tokens[tr.dtokmftokindexesargs[i][0]]
 				sourceTokenLen := len(sourceToken)
