@@ -2899,17 +2899,16 @@ func (c *client) addShadowSubscriptions(acc *Account, sub *subscription, enact b
 			hasWC = true
 		}
 	}
-	// Loop over the import subjects. We have 4 scenarios. If we have an
-	// exact match or a superset match we should use the from field from
-	// the import. If we are a subset or overlap, we have to dynamically calculate
-	// the subject. On overlap, ime requires the overlap subject.
 	if (c.kind == CLIENT || c.kind == LEAF) && c.in.flags.isSet(hasMappings) {
 		mappedSub, _ := c.acc.selectMappedSubject(string(sub.subject))
 		sub.mappedSub = sub.subject
 		sub.subject = []byte(mappedSub)
 		subj =mappedSub
 	}
-
+	// Loop over the import subjects. We have 4 scenarios. If we have an
+	// exact match or a superset match we should use the from field from
+	// the import. If we are a subset or overlap, we have to dynamically calculate
+	// the subject. On overlap, ime requires the overlap subject.
 	for _, im := range acc.imports.streams {
 		if im.invalid {
 			continue
