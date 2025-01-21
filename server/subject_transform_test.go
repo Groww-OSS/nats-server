@@ -133,6 +133,13 @@ func TestSubjectTransformHelpers(t *testing.T) {
 }
 
 func TestSubjectTransforms(t *testing.T) {
+
+	var function = func (value string) string {
+		return "custom" + value 
+	}
+
+	RegisterCustomMappingFunction(function)
+
 	shouldErr := func(src, dest string, strict bool) {
 		t.Helper()
 		if _, err := NewSubjectTransformWithStrict(src, dest, strict); err != ErrBadSubject && !errors.Is(err, ErrInvalidMappingDestination) {
@@ -185,6 +192,9 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldBeOK("*.*", "{{partition(10,1,2)}}", false)
 	shouldBeOK("foo.*.*", "foo.{{wildcard(1)}}.{{wildcard(2)}}.{{partition(5,1,2)}}", false)
 
+	shouldBeOK("foo.*", "bar.{{custom(1)}}", false)
+	shouldBeOK("foo.*", "bar.{{custom(1)}}", true)
+
 	shouldMatch := func(src, dest, sample, expected string) {
 		t.Helper()
 		tr := shouldBeOK(src, dest, false)
@@ -220,4 +230,7 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldMatch("*", "{{left(1,1)}}", "1234", "1")
 	shouldMatch("*", "{{left(1,3)}}", "1234", "123")
 	shouldMatch("*", "{{left(1,6)}}", "1234", "1234")
+	shouldMatch("foo.*", "bar.{{custom(1)}}", "foo.hello","bar.customhello")
+	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar","bar.custom2.custom1")
+	shouldMatch("user.details.*", "user.details.{{custom(1)}}", "user.details.11","user.details.custom11")
 }

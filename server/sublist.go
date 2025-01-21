@@ -1292,7 +1292,8 @@ func ValidateMapping(src string, dest string) error {
 				!splitFromRightMappingFunctionRegEx.MatchString(t) &&
 				!sliceFromLeftMappingFunctionRegEx.MatchString(t) &&
 				!sliceFromRightMappingFunctionRegEx.MatchString(t) &&
-				!splitMappingFunctionRegEx.MatchString(t) {
+				!splitMappingFunctionRegEx.MatchString(t) &&
+				!customtMappingFunctionRegEx.MatchString(t) {
 				return &mappingDestinationErr{t, ErrUnknownMappingDestinationFunction}
 			} else {
 				continue
