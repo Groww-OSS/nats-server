@@ -585,21 +585,21 @@ func (c *client) clientTypeString() string {
 // FIXME(dlc) - This is getting bloated for normal subs, need
 // to optionally have an opts section for non-normal stuff.
 type subscription struct {
-	client  *client
-	im      *streamImport // This is for import stream support.
-	rsi     bool
-	si      bool
-	shadow  []*subscription // This is to track shadowed accounts.
-	icb     msgHandler
-	subject []byte
-	queue   []byte
-	sid     []byte
-	origin  []byte
-	nm      int64
-	max     int64
-	qw      int32
-	closed  int32
-	mqtt    *mqttSub
+	client    *client
+	im        *streamImport // This is for import stream support.
+	rsi       bool
+	si        bool
+	shadow    []*subscription // This is to track shadowed accounts.
+	icb       msgHandler
+	subject   []byte
+	queue     []byte
+	sid       []byte
+	origin    []byte
+	nm        int64
+	max       int64
+	qw        int32
+	closed    int32
+	mqtt      *mqttSub
 	mappedSub []byte
 }
 
@@ -2903,7 +2903,7 @@ func (c *client) addShadowSubscriptions(acc *Account, sub *subscription, enact b
 		mappedSub, _ := c.acc.selectMappedSubject(string(sub.subject))
 		sub.mappedSub = sub.subject
 		sub.subject = []byte(mappedSub)
-		subj =mappedSub
+		subj = mappedSub
 	}
 	// Loop over the import subjects. We have 4 scenarios. If we have an
 	// exact match or a superset match we should use the from field from
@@ -4709,7 +4709,7 @@ func (c *client) processMsgResults(acc *Account, r *SublistResult, msg, deliver,
 				dsubj = append(_dsubj[:0], sub.im.to...)
 			}
 
-			if(sub.mappedSub != nil){
+			if sub.mappedSub != nil {
 				dsubj = append(_dsubj[:0], sub.mappedSub...)
 			}
 			if mt != nil {

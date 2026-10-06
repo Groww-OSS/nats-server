@@ -134,8 +134,8 @@ func TestSubjectTransformHelpers(t *testing.T) {
 
 func TestSubjectTransforms(t *testing.T) {
 
-	var function = func (value string) string {
-		return "custom" + value 
+	var function = func(value string) string {
+		return "custom" + value
 	}
 
 	RegisterCustomMappingFunction(function)
@@ -230,7 +230,7 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldMatch("*", "{{left(1,1)}}", "1234", "1")
 	shouldMatch("*", "{{left(1,3)}}", "1234", "123")
 	shouldMatch("*", "{{left(1,6)}}", "1234", "1234")
-	shouldMatch("foo.*", "bar.{{custom(1)}}", "foo.hello","bar.customhello")
-	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar","bar.custom2.custom1")
-	shouldMatch("user.details.*", "user.details.{{custom(1)}}", "user.details.11","user.details.custom11")
+	shouldMatch("foo.*", "bar.{{custom(1)}}", "foo.hello", "bar.customhello")
+	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar", "bar.custom2.custom1")
+	shouldMatch("user.details.*", "user.details.{{custom(1)}}", "user.details.11", "user.details.custom11")
 }
