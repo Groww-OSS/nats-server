@@ -22,6 +22,7 @@ import (
 	"testing"
 )
 
+
 func TestPlaceHolderIndex(t *testing.T) {
 	testString := "$1"
 	transformType, indexes, nbPartitions, _, err := indexPlaceHolders(testString)
@@ -136,6 +137,11 @@ func TestSubjectTransformHelpers(t *testing.T) {
 }
 
 func TestSubjectTransforms(t *testing.T) {
+	var function = func(value string) string {
+		return "custom" + value
+	}
+
+	RegisterCustomMappingFunction(function)
 	shouldErr := func(src, dest string, strict bool) {
 		t.Helper()
 		if _, err := NewSubjectTransformWithStrict(src, dest, strict); err != ErrBadSubject && !errors.Is(err, ErrInvalidMappingDestination) {
@@ -194,6 +200,9 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldBeOK("*.*", "{{partition(10,1,2)}}", false)
 	shouldBeOK("foo.*.*", "foo.{{wildcard(1)}}.{{wildcard(2)}}.{{partition(5,1,2)}}", false)
 
+	shouldBeOK("foo.*", "bar.{{custom(1)}}", false)
+	shouldBeOK("foo.*", "bar.{{custom(1)}}", true)
+
 	shouldBeOK("foo.*", fmt.Sprintf("foo.{{partition(%d)}}", math.MaxInt32), false) // Exactly int32
 	shouldBeOK("foo.*", fmt.Sprintf("foo.{{random(%d)}}", math.MaxInt32), false)    // Exactly int32
 	shouldBeOK("foo.bar", fmt.Sprintf("foo.{{random(%d)}}", math.MaxInt32), false)  // Exactly int32
@@ -240,6 +249,9 @@ func TestSubjectTransforms(t *testing.T) {
 	shouldMatch("*", "bar.{{partition(10)}}", "baz", "bar.0")
 	shouldMatch("*", "bar.{{partition(10)}}", "qux", "bar.9")
 	shouldMatch("*", "bar.{{random(0)}}", "qux", "bar.0")
+	shouldMatch("foo.*", "bar.{{custom(1)}}", "foo.hello", "bar.customhello")
+	shouldMatch("foo.*.*.bar", "bar.{{custom(2)}}.{{custom(1)}}", "foo.1.2.bar", "bar.custom2.custom1")
+	shouldMatch("user.details.*", "user.details.{{custom(1)}}", "user.details.11", "user.details.custom11")
 	for range 100 {
 		shouldMatch("*", "bar.{{random(6)}}", "qux", "bar.0", "bar.1", "bar.2", "bar.3", "bar.4", "bar.5")
 	}

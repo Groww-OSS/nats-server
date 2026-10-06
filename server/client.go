@@ -661,6 +661,7 @@ type subscription struct {
 	qw      int32
 	closed  int32
 	mqtt    *mqttSub
+	mappedSub []byte
 }
 
 // Indicate that this subscription is closed.
@@ -3268,6 +3269,12 @@ func (c *client) addShadowSubscriptions(acc *Account, sub *subscription) error {
 			hasWC = true
 		}
 	}
+	if (c.kind == CLIENT || c.kind == LEAF) && c.in.flags.isSet(hasMappings) {
+		mappedSub, _ := c.acc.selectMappedSubject(string(sub.subject))
+		sub.mappedSub = sub.subject
+		sub.subject = []byte(mappedSub)
+		subj =mappedSub
+	}
 	// Loop over the import subjects. We have 4 scenarios. If we have an
 	// exact match or a superset match we should use the from field from
 	// the import. If we are a subset or overlap, we have to dynamically calculate
@@ -3361,7 +3368,6 @@ func (c *client) addShadowSub(sub *subscription, ime *ime) (*subscription, error
 
 	im := ime.im
 	nsub.im = im
-
 	if !im.usePub && ime.dyn && im.tr != nil {
 		if im.rtr == nil {
 			im.rtr = im.tr.reverse()
@@ -5467,6 +5473,9 @@ func (c *client) processMsgResults(acc *Account, r *SublistResult, msg, deliver,
 				dsubj = append(_dsubj[:0], sub.im.to...)
 			}
 
+			if(sub.mappedSub != nil){
+				dsubj = append(_dsubj[:0], sub.mappedSub...)
+			}
 			if mt != nil {
 				mt.addStreamExportEvent(sub.client, dsubj)
 				// If allow_trace is false...
