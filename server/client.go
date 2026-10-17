@@ -645,22 +645,22 @@ func (c *client) clientTypeString() string {
 // FIXME(dlc) - This is getting bloated for normal subs, need
 // to optionally have an opts section for non-normal stuff.
 type subscription struct {
-	client  *client
-	im      *streamImport // This is for import stream support.
-	rsi     bool
-	si      bool
-	leaf    bool            // Subscription interest originated from a leaf node.
-	shadow  []*subscription // This is to track shadowed accounts.
-	icb     msgHandler
-	subject []byte
-	queue   []byte
-	sid     []byte
-	origin  []byte
-	nm      int64
-	max     int64
-	qw      int32
-	closed  int32
-	mqtt    *mqttSub
+	client    *client
+	im        *streamImport // This is for import stream support.
+	rsi       bool
+	si        bool
+	leaf      bool            // Subscription interest originated from a leaf node.
+	shadow    []*subscription // This is to track shadowed accounts.
+	icb       msgHandler
+	subject   []byte
+	queue     []byte
+	sid       []byte
+	origin    []byte
+	nm        int64
+	max       int64
+	qw        int32
+	closed    int32
+	mqtt      *mqttSub
 	mappedSub []byte
 }
 
@@ -3240,6 +3240,20 @@ func (c *client) addShadowSubscriptions(acc *Account, sub *subscription) error {
 		return ErrMissingAccount
 	}
 
+	// Apply custom subject mapping BEFORE acquiring acc.mu.RLock() below:
+	// selectMappedSubject acquires acc.mu.RLock() itself, and sync.RWMutex
+	// is not reentrant — calling it while holding the read lock deadlocks
+	// as soon as a writer queues on the same account lock.
+	// Service import subscriptions (sub.si) are never mapped, preserving
+	// the previous behavior. sub.si is set at subscription creation and
+	// never mutated, so it is safe to read without the lock here.
+	if (c.kind == CLIENT || c.kind == LEAF) && !sub.si && c.in.flags.isSet(hasMappings) {
+		if mappedSub, mapped := c.acc.selectMappedSubject(bytesToString(sub.subject)); mapped {
+			sub.mappedSub = sub.subject
+			sub.subject = stringToBytes(mappedSub)
+		}
+	}
+
 	var (
 		_ims           [16]ime
 		ims            = _ims[:0]
@@ -3268,12 +3282,6 @@ func (c *client) addShadowSubscriptions(acc *Account, sub *subscription) error {
 		if !hasWC && tokens[len(tokens)-1] == fwcs {
 			hasWC = true
 		}
-	}
-	if (c.kind == CLIENT || c.kind == LEAF) && c.in.flags.isSet(hasMappings) {
-		mappedSub, _ := c.acc.selectMappedSubject(string(sub.subject))
-		sub.mappedSub = sub.subject
-		sub.subject = []byte(mappedSub)
-		subj =mappedSub
 	}
 	// Loop over the import subjects. We have 4 scenarios. If we have an
 	// exact match or a superset match we should use the from field from
@@ -5473,7 +5481,7 @@ func (c *client) processMsgResults(acc *Account, r *SublistResult, msg, deliver,
 				dsubj = append(_dsubj[:0], sub.im.to...)
 			}
 
-			if(sub.mappedSub != nil){
+			if sub.mappedSub != nil {
 				dsubj = append(_dsubj[:0], sub.mappedSub...)
 			}
 			if mt != nil {
