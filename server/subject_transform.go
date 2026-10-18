@@ -24,10 +24,9 @@ import (
 	"strings"
 )
 
-
 var customMappingFunction func(token string) string
 
-func RegisterCustomMappingFunction(f func(token string) string) error{
+func RegisterCustomMappingFunction(f func(token string) string) error {
 	if customMappingFunction == nil {
 		customMappingFunction = f
 		return nil
@@ -136,7 +135,7 @@ func NewSubjectTransformWithStrict(src, dest string, strict bool) (*subjectTrans
 			}
 
 			if strict {
-				if tranformType != NoTransform && tranformType != Wildcard  && tranformType != Custom {
+				if tranformType != NoTransform && tranformType != Wildcard && tranformType != Custom {
 					return nil, &mappingDestinationErr{token, ErrMappingDestinationNotSupportedForImport}
 				}
 			}
@@ -543,10 +542,13 @@ func (tr *subjectTransform) TransformTokenizedSubject(tokens []string) string {
 				}
 				b.WriteString(tr.getHashPartition(keyForHashing, int(tr.dtokmfintargs[i])))
 			case Custom:
-				if(customMappingFunction == nil) {
+				if customMappingFunction == nil {
+					// No custom function registered: pass the token
+					// through unchanged instead of calling a nil function.
 					b.WriteString(tokens[tr.dtokmftokindexesargs[i][0]])
+				} else {
+					b.WriteString(customMappingFunction(tokens[tr.dtokmftokindexesargs[i][0]]))
 				}
-				b.WriteString(customMappingFunction(tokens[tr.dtokmftokindexesargs[i][0]]))
 			case Wildcard: // simple substitution
 				switch {
 				case len(tr.dtokmftokindexesargs) < i:
